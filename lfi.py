@@ -15,15 +15,12 @@ init(autoreset=True)
 
 # List of User-Agents
 USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Version/14.1.2 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/91.0.864.70",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
-        "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
-        "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36",
-        ]
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15"
+]
 
 def get_random_user_agent():
     """
@@ -53,38 +50,37 @@ def test_lfi(url, payloads, success_criteria, max_threads):
     Test a URL for LFI vulnerabilities using the given payloads.
     """
     def check_payload(payload):
-    """
-    Check a single payload against the URL for LFI.
-    """
-    encoded_payload = quote(payload.strip())  # Correct URL encoding
-    target_url = f"{url}{encoded_payload}"
-    start_time = time.time()
+        """
+        Check a single payload against the URL for LFI.
+        """
+        encoded_payload = quote(payload.strip())  # Correct URL encoding
+        target_url = f"{url}{encoded_payload}"
+        start_time = time.time()
 
-    try:
-        headers = {"User-Agent": get_random_user_agent()}
-        # Disable automatic redirect following
-        response = requests.get(target_url, headers=headers, verify=False, timeout=10, allow_redirects=False)
-        response_time = round(time.time() - start_time, 2)
-        result = None
-        is_vulnerable = False
+        try:
+            headers = {"User-Agent": get_random_user_agent()}
+            # Disable automatic redirect following
+            response = requests.get(target_url, headers=headers, verify=False, timeout=10, allow_redirects=False)
+            response_time = round(time.time() - start_time, 2)
+            result = None
+            is_vulnerable = False
 
-        if response.status_code in [301, 302]:
-            # Handle redirects
-            result = Fore.YELLOW + f"[→] Redirected: {Fore.RESET}{target_url} - Response Time: {response_time}s"
-        elif response.status_code == 200:
-            # Check response content against success criteria
-            is_vulnerable = any(re.search(pattern, response.text) for pattern in success_criteria)
-            if is_vulnerable:
-                result = Fore.GREEN + f"[✓] Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
+            if response.status_code in [301, 302]:
+                # Handle redirects
+                result = Fore.YELLOW + f"[→] Redirected: {Fore.RESET}{target_url} - Response Time: {response_time}s"
+            elif response.status_code == 200:
+                # Check response content against success criteria
+                is_vulnerable = any(re.search(pattern, response.text) for pattern in success_criteria)
+                if is_vulnerable:
+                    result = Fore.GREEN + f"[✓] Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
+                else:
+                    result = Fore.RED + f"[✗] Not Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
             else:
                 result = Fore.RED + f"[✗] Not Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
-        else:
-            result = Fore.RED + f"[✗] Not Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
 
-        return result, is_vulnerable
-    except requests.exceptions.RequestException as e:
-        return Fore.RED + f"[!] Error accessing {target_url}: {str(e)}", False
-
+            return result, is_vulnerable
+        except requests.exceptions.RequestException as e:
+            return Fore.RED + f"[!] Error accessing {target_url}: {str(e)}", False
 
     found_vulnerabilities = 0
     vulnerable_urls = []
@@ -164,7 +160,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Success criteria (adjust as needed)
-    success_criteria = ["root:x:0:", "/etc/passwd", "boot"]
+    success_criteria = ["root:", "/etc/passwd", "boot"]
 
     # Run the scanner
     run_lfi_scanner(urls, payloads, success_criteria, args.threads, args.output)
