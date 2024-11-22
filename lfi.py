@@ -53,33 +53,38 @@ def test_lfi(url, payloads, success_criteria, max_threads):
     Test a URL for LFI vulnerabilities using the given payloads.
     """
     def check_payload(payload):
-        """
-        Check a single payload against the URL for LFI.
-        """
-        encoded_payload = quote(payload.strip())  # Correct URL encoding
-        target_url = f"{url}{encoded_payload}"
-        start_time = time.time()
+    """
+    Check a single payload against the URL for LFI.
+    """
+    encoded_payload = quote(payload.strip())  # Correct URL encoding
+    target_url = f"{url}{encoded_payload}"
+    start_time = time.time()
 
-        try:
-            headers = {"User-Agent": get_random_user_agent()}
-            response = requests.get(target_url, headers=headers, verify=False, timeout=10)
-            response_time = round(time.time() - start_time, 2)
-            result = None
-            is_vulnerable = False
+    try:
+        headers = {"User-Agent": get_random_user_agent()}
+        # Disable automatic redirect following
+        response = requests.get(target_url, headers=headers, verify=False, timeout=10, allow_redirects=False)
+        response_time = round(time.time() - start_time, 2)
+        result = None
+        is_vulnerable = False
 
-            if response.status_code == 200:
-                # Check response content against success criteria
-                is_vulnerable = any(re.search(pattern, response.text) for pattern in success_criteria)
-                if is_vulnerable:
-                    result = Fore.GREEN + f"[✓] Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
-                else:
-                    result = Fore.RED + f"[✗] Not Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
+        if response.status_code in [301, 302]:
+            # Handle redirects
+            result = Fore.YELLOW + f"[→] Redirected: {Fore.RESET}{target_url} - Response Time: {response_time}s"
+        elif response.status_code == 200:
+            # Check response content against success criteria
+            is_vulnerable = any(re.search(pattern, response.text) for pattern in success_criteria)
+            if is_vulnerable:
+                result = Fore.GREEN + f"[✓] Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
             else:
                 result = Fore.RED + f"[✗] Not Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
+        else:
+            result = Fore.RED + f"[✗] Not Vulnerable: {Fore.RESET}{target_url} - Response Time: {response_time}s"
 
-            return result, is_vulnerable
-        except requests.exceptions.RequestException as e:
-            return Fore.RED + f"[!] Error accessing {target_url}: {str(e)}", False
+        return result, is_vulnerable
+    except requests.exceptions.RequestException as e:
+        return Fore.RED + f"[!] Error accessing {target_url}: {str(e)}", False
+
 
     found_vulnerabilities = 0
     vulnerable_urls = []
