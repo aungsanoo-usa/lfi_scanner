@@ -1,4 +1,3 @@
 requests
 colorama
 urllib3
-prompt_toolkit
