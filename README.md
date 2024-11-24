@@ -41,7 +41,7 @@ The tool uses the following libraries:
 Run the script from the command line with the following options:
 
 ```bash
-python lfi.py -l urls.txt -p lfi.txt -t 5 -o output.txt
+python lfi_scan.py -l urls.txt -p payloads.txt -t 5 -o vul_output.txt
 ```
 
 ### Command-Line Arguments
